@@ -127,19 +127,9 @@ int main(void)
   uint16_t encoder_max = 0;
   uint16_t encoder_min = 4100;
   HAL_TIM_Base_Start(&htim1);
-
-
-  //CYTRON setup
-//  Pin CYTRON_DIR_1(CYTRON_DIR_1_GPIO_Port, CYTRON_DIR_1_Pin);
-//  Pin CYTRON_PWM_1(CYTRON_PWM_1_GPIO_Port, CYTRON_PWM_1_Pin);
-//  Pin AMT22_1(GPIOC, GPIO_PIN_7);
-//
-//  int32_t  CH2_DC = 0;
-//  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-//  HAL_Delay(10);
-//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 70);
-//  RoverArmMotor Wrist_Roll(&hspi1, CYTRON_PWM_1, CYTRON_DIR_1, AMT22_1, CYTRON, 0, 359.0f);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  uint8_t cycle = 0;
+__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
   
   resetAMT22(&hspi1, GPIOC, GPIO_PIN_7, &htim1);
 
@@ -151,56 +141,27 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    //AMT22 test
-	  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
-	  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
-	  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
-	  printf("encoder 1 gives %d\r\n", encoderData_1);
-	  // printf("encoder 2 gives %d\r\n", encoderData_2);
-	  // printf("encoder 3 gives %d\r\n", encoderData_3);
+	  while((cycle < 100))
+	  {
+		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
+		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
+		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
+		  printf("encoder 1 gives %d\r\n", encoderData_1);
+		  cycle++;
+		  HAL_Delay(100);
+	  }
 
-
-    //LEGACY CODE
-	  // if(encoderData_3 > encoder_max && encoderData_3 != 65535) encoder_max = encoderData_3;
-	  // if(encoderData_3 < encoder_min && encoderData_3 != 65535) encoder_min = encoderData_3;
-	  // printf("encoder_max is %d\r\n", encoder_max);
-	  // printf("encoder_min is %d\r\n", encoder_min);
-
-
-    //PWM test
-    // while(CH2_DC < 65535)
-    // {
-    //     // TIM2->CCR2 = CH2_DC;
-    // 	printf("current CH2_DC %d\r\n", CH2_DC);
-    //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, CH2_DC); //this is the same as above
-    //     CH2_DC += 70;
-    //     HAL_Delay(10);
-    // }
-    // while(CH2_DC > 0)
-    // {
-    //     // TIM2->CCR2 = CH2_DC;
-    // 	printf("current CH2_DC %d\r\n", CH2_DC);
-    //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, CH2_DC); //this is the same as above
-    //     CH2_DC -= 70;
-    //     HAL_Delay(10);
-    // }
-
-
-
-
-
-	  HAL_Delay(10);
-
-
-	  //TIMER TEST
-	  // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-	  // HAL_Delay(1000);
-	  // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-	  // HAL_Delay(1000);
-
-	  //TIMER US TEST
-//	   HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_15);
-//	   delay_us(3);
+	  while(cycle > 0)
+	  {
+		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
+		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
+		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
+		  printf("encoder 1 gives %d\r\n", encoderData_1);
+		  cycle--;
+		  HAL_Delay(100);
+	  }
 
 
     /* USER CODE END WHILE */

@@ -44,6 +44,12 @@ uint8_t spiWriteRead(SPI_HandleTypeDef *hspi, uint8_t sendByte, GPIO_TypeDef* en
   return data;
 }
 
+uint16_t* getPositionWithTurnsSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
+{
+	  uint16_t currentPosition;       //16-bit response from encoder
+	  uint8_t binaryArray[16];        //after receiving the position we will populate this array and use it for calculating the checksum
+}
+
 uint16_t getPositionSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
 {
   uint16_t currentPosition;       //16-bit response from encoder
