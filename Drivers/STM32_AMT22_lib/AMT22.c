@@ -7,6 +7,7 @@
 #include "tim.h"
 /* SPI commands */
 #define AMT22_NOP       0x00
+#define AMT22_TURNS		0xA0
 #define AMT22_RESET     0x60
 #define AMT22_ZERO      0x70
 
@@ -44,10 +45,36 @@ uint8_t spiWriteRead(SPI_HandleTypeDef *hspi, uint8_t sendByte, GPIO_TypeDef* en
   return data;
 }
 
-uint16_t* getPositionWithTurnsSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
+// TODO: Fix this. It's 2am so I'm probably missing something very obvious.
+int16_t getTurnCounterSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
 {
-	  uint16_t currentPosition;       //16-bit response from encoder
-	  uint8_t binaryArray[16];        //after receiving the position we will populate this array and use it for calculating the checksum
+	int16_t currentPosition, turnCounter;       //16-bit response from encoder
+	uint8_t binaryArray[16];        //after receiving the position we will populate this array and use it for calculating the checksum
+
+	//get first byte which is the high byte, shift it 8 bits. don't release line for the first byte
+	currentPosition = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 8;
+
+	//this is the time required between bytes as specified in the datasheet.
+	//  delay(timer, 3);
+	delay_us_AMT22(AMT22_DELAY);
+
+	//OR the low byte with the currentPosition variable. release line after second byte
+	currentPosition |= spiWriteRead(hspi, AMT22_TURNS, encoderPort, encoderPin, 1, timer);
+
+	delay_us_AMT22(AMT22_DELAY);
+
+	// Datasheet says the number will be a 14 bit signed integer, so shift the lower 8 bits
+	// by 10 to align the sign bits
+	turnCounter = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 10;
+
+	delay_us_AMT22(AMT22_DELAY);
+
+	// Read the lower two bits, and shift them left by 2 since we shifted the high bits by 10 already
+	uint8_t intermediate = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 1, timer);
+	turnCounter |= (intermediate << 2);
+
+	return turnCounter;
+
 }
 
 uint16_t getPositionSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)

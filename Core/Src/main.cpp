@@ -122,14 +122,20 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   uint16_t encoderData_1 = 99;
+  int16_t encoderTurns_1 = 0;
+
   uint16_t encoderData_2 = 99;
+  int16_t encoderTurns_2 = 0;
+
   uint16_t encoderData_3 = 99;
-  uint16_t encoder_max = 0;
-  uint16_t encoder_min = 4100;
+  int16_t encoderTurns_3 = 0;
+
+
+  // TODO: Initialize other PWM modules to expand functionality to
+  // different motors with different pins
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  uint8_t cycle = 0;
-__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
   
   resetAMT22(&hspi1, GPIOC, GPIO_PIN_7, &htim1);
 
@@ -139,15 +145,27 @@ __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t cycle = 0;
+
+  // Meant to sweep through speeds and print out the position and turn counter. You can go to
+  // Device Manager > COM Ports to find the Nucleo, then open PuTTY or any other terminal emulator
+  // you like, then set the Port = Nucleo's port and Baud rate = 115200.
   while (1)
   {
 	  while((cycle < 100))
 	  {
+		  // PWM cycle set function: 0-100 maps to 0-100% duty cycle
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
+
 		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+
+		  // TODO: Fix bug with the turn counter, try to find form posts because datasheet
+		  // is ass
+		  encoderTurns_1 = getTurnCounterSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
 		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
 		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
 		  printf("encoder 1 gives %d\r\n", encoderData_1);
+		  printf("encoder 1 turns: %d\r\n", encoderTurns_1);
 		  cycle++;
 		  HAL_Delay(100);
 	  }
@@ -156,9 +174,11 @@ __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
 	  {
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
 		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  encoderTurns_1 = getTurnCounterSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
 		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
 		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
 		  printf("encoder 1 gives %d\r\n", encoderData_1);
+		  printf("encoder 1 turns: %d\r\n", encoderTurns_1);
 		  cycle--;
 		  HAL_Delay(100);
 	  }
