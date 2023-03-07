@@ -18,6 +18,40 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 
+/*
+ * TODO: Pinouts
+ *
+ * [SPI Bus (SPI2)]
+ * PC2 - MISO
+ * PC3 - MOSI
+ * PB10 - SCLK
+ *
+ * [Motor #1]
+ * PA1 - PWM1
+ * PC13 - DIR1
+ * PB11 - CS1
+ * Limit switch pin(s)?
+ *
+ * [Motor #2]
+ * PA2 - PWM2
+ * PB13 - DIR2
+ * PA4 - CS2
+ * Limit switch pin(s)?
+ *
+ * [Motor #3]
+ * PA3 - PWM3
+ * PA8 - DIR3
+ * PB12 - CS3
+ * Limit switch pin(s)?
+ *
+ * [Motor #4]
+ * PA0 - PWM4
+ * (No direction pin)
+ * (No chip select pin)
+ * Limit switch pin(s)?
+ *
+ */
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
   (byte & 0x80 ? '1' : '0'), \
