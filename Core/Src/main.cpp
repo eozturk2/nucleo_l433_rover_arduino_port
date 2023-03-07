@@ -237,9 +237,6 @@ int main(void)
 	  {
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
 		  getTurnCounterSPI(pos, &hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
-
-		  // TODO: Fix bug with the turn counter, try to find form posts because datasheet
-		  // is ass
 		  encoderTurns_1 = pos[1];
 		  // encoderData_1 = pos[0];
 		  // encoderTurns_1 = pos[1];
