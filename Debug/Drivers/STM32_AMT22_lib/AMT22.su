@@ -1,8 +1,8 @@
 ../Drivers/STM32_AMT22_lib/AMT22.c:19:6:setCSLine	16	static
 ../Drivers/STM32_AMT22_lib/AMT22.c:24:9:spiWriteRead	40	static
-../Drivers/STM32_AMT22_lib/AMT22.c:48:9:getTurnCounterSPI	56	static
-../Drivers/STM32_AMT22_lib/AMT22.c:77:10:getPositionSPI	56	static
-../Drivers/STM32_AMT22_lib/AMT22.c:112:6:setZeroSPI	32	static
-../Drivers/STM32_AMT22_lib/AMT22.c:127:6:resetAMT22	32	static
-../Drivers/STM32_AMT22_lib/AMT22.c:141:6:delay	24	static
-../Drivers/STM32_AMT22_lib/AMT22.c:152:6:delay_us_AMT22	16	static
+../Drivers/STM32_AMT22_lib/AMT22.c:49:6:getTurnCounterSPI	72	static
+../Drivers/STM32_AMT22_lib/AMT22.c:132:10:getPositionSPI	56	static
+../Drivers/STM32_AMT22_lib/AMT22.c:167:6:setZeroSPI	32	static
+../Drivers/STM32_AMT22_lib/AMT22.c:182:6:resetAMT22	32	static
+../Drivers/STM32_AMT22_lib/AMT22.c:196:6:delay	24	static
+../Drivers/STM32_AMT22_lib/AMT22.c:207:6:delay_us_AMT22	16	static

@@ -45,35 +45,74 @@ uint8_t spiWriteRead(SPI_HandleTypeDef *hspi, uint8_t sendByte, GPIO_TypeDef* en
   return data;
 }
 
-// TODO: Fix this. It's 2am so I'm probably missing something very obvious.
-int16_t getTurnCounterSPI(SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
+void getTurnCounterSPI(int16_t* returnArr, SPI_HandleTypeDef *hspi, GPIO_TypeDef* encoderPort, uint16_t encoderPin, uint8_t resolution, TIM_HandleTypeDef *timer)
 {
-	int16_t currentPosition, turnCounter;       //16-bit response from encoder
-	uint8_t binaryArray[16];        //after receiving the position we will populate this array and use it for calculating the checksum
+	uint32_t position_raw, turns_raw;       //raw responses from encoder
+	uint8_t binaryArray[16];        //after receiving the position and turn we will populate this array and use it for calculating the checksum
+	int16_t position, turns;
 
-	//get first byte which is the high byte, shift it 8 bits. don't release line for the first byte
-	currentPosition = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 8;
-
-	//this is the time required between bytes as specified in the datasheet.
-	//  delay(timer, 3);
+	//get first byte of position which is the high byte, shift it 8 bits. don't release line for the first byte. then, get the lower byte and
+	// or it with the variable to complete the read
+	position_raw = (spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 8);
 	delay_us_AMT22(AMT22_DELAY);
-
-	//OR the low byte with the currentPosition variable. release line after second byte
-	currentPosition |= spiWriteRead(hspi, AMT22_TURNS, encoderPort, encoderPin, 1, timer);
+	position_raw |= (spiWriteRead(hspi, AMT22_TURNS, encoderPort, encoderPin, 0, timer));
 
 	delay_us_AMT22(AMT22_DELAY);
 
-	// Datasheet says the number will be a 14 bit signed integer, so shift the lower 8 bits
-	// by 10 to align the sign bits
-	turnCounter = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 10;
-
+	//same thing with the turn counter
+	turns_raw = (spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 0, timer) << 8);
 	delay_us_AMT22(AMT22_DELAY);
+	turns_raw |= (spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 1, timer));
 
-	// Read the lower two bits, and shift them left by 2 since we shifted the high bits by 10 already
-	uint8_t intermediate = spiWriteRead(hspi, AMT22_NOP, encoderPort, encoderPin, 1, timer);
-	turnCounter |= (intermediate << 2);
+	//run through the 16 bits of position and put each bit into a slot in the array so we can do the checksum calculation
+	for(int i = 0; i < 16; i++){binaryArray[i] = (0x01) & (position_raw >> (i));}
 
-	return turnCounter;
+	//using the equation on the datasheet we can calculate the checksums and then make sure they match what the encoder sent
+	if ((binaryArray[15] == !(binaryArray[13] ^ binaryArray[11] ^ binaryArray[9] ^ binaryArray[7] ^ binaryArray[5] ^ binaryArray[3] ^ binaryArray[1]))
+		 && (binaryArray[14] == !(binaryArray[12] ^ binaryArray[10] ^ binaryArray[8] ^ binaryArray[6] ^ binaryArray[4] ^ binaryArray[2] ^ binaryArray[0])))
+	{
+	 //we got back a good position, so just mask away the checkbits
+	 // bitstream &= 0x3FFF;
+	 // position = bitstream;
+		position = (position_raw & 0x3FFF);
+	}
+	else{position = 0xFFFF;} // bad position
+
+  //if the resolution is 12-bits, and position wasn't 0xFFFF, then shift position, otherwise do nothing
+  if ((resolution == RES12) && (position != 0xFFFF)) position = position >> 2;
+
+
+  //repeat checksum calculation for the turn counter
+  for(int i = 0; i < 16; i++){binaryArray[i] = (0x01) & (bitstream2 >> (i));}
+
+  //using the equation on the datasheet we can calculate the checksums and then make sure they match what the encoder sent
+	if ((binaryArray[15] == !(binaryArray[13] ^ binaryArray[11] ^ binaryArray[9] ^ binaryArray[7] ^ binaryArray[5] ^ binaryArray[3] ^ binaryArray[1]))
+		 && (binaryArray[14] == !(binaryArray[12] ^ binaryArray[10] ^ binaryArray[8] ^ binaryArray[6] ^ binaryArray[4] ^ binaryArray[2] ^ binaryArray[0])))
+	{
+	 //we got back a good position, so just mask away the checkbits
+	 turns_raw &= 0x3FFF;
+
+	 // the received 16 bit integer is supposed to be a 14-bit signed integer with two check bits as its
+	 // msb. once that is masked away, we still have to figure out its sign and extend it.
+
+	 // check bit 14
+	 if(turns_raw & 0x2000){
+		 // if number is negative, extend the sign by or'ing it with 1100 0000 0000 0000 and complete it to
+		 // an int16_t
+		 turns = (0xC000 | turns_raw);
+	 }else{
+		 // if number is positive, its 14-bit version will be equal to its int16_t version
+		 turns = turns_raw;
+	 }
+	}
+	else
+	{
+	turns = 0xFFFF; //bad position
+	}
+
+	// populate return array
+	returnArr[0] = position;
+	returnArr[1] = turns;
 
 }
 

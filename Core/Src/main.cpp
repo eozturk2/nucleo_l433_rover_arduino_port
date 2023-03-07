@@ -17,6 +17,18 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0')
+
 #include "main.h"
 #include "spi.h"
 #include "tim.h"
@@ -121,13 +133,13 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  uint16_t encoderData_1 = 99;
+  int16_t encoderData_1 = 99;
   int16_t encoderTurns_1 = 0;
 
-  uint16_t encoderData_2 = 99;
+  int16_t encoderData_2 = 99;
   int16_t encoderTurns_2 = 0;
 
-  uint16_t encoderData_3 = 99;
+  int16_t encoderData_3 = 99;
   int16_t encoderTurns_3 = 0;
 
 
@@ -137,7 +149,14 @@ int main(void)
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
   
+
+  // TODO: Figure out how to reset the turn counter at powerup. Right now it just holds onto the previous
+  // value and resetting/setting to zero doesn't seem to help.
   resetAMT22(&hspi1, GPIOC, GPIO_PIN_7, &htim1);
+  setZeroSPI(&hspi1, GPIOC, GPIO_PIN_7, &htim1);
+
+  // Reverse direction
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
 
 
@@ -150,6 +169,8 @@ int main(void)
   // Meant to sweep through speeds and print out the position and turn counter. You can go to
   // Device Manager > COM Ports to find the Nucleo, then open PuTTY or any other terminal emulator
   // you like, then set the Port = Nucleo's port and Baud rate = 115200.
+  int16_t pos[2];
+
   while (1)
   {
 	  while((cycle < 100))
@@ -157,28 +178,45 @@ int main(void)
 		  // PWM cycle set function: 0-100 maps to 0-100% duty cycle
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
 
-		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  getTurnCounterSPI(pos, &hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
 
-		  // TODO: Fix bug with the turn counter, try to find form posts because datasheet
-		  // is ass
-		  encoderTurns_1 = getTurnCounterSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  // TODO: Convert an [angle, turn counter] array into a useful measure of absolute angle
+		  encoderData_1 = pos[0];
+		  encoderTurns_1 = pos[1];
 		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
 		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
+
 		  printf("encoder 1 gives %d\r\n", encoderData_1);
-		  printf("encoder 1 turns: %d\r\n", encoderTurns_1);
-		  cycle++;
+		  printf("encoder 1 turns %d\r\n", encoderTurns_1);
+//		  printf("encoderData_1: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\r\n",
+//				  BYTE_TO_BINARY(encoderData_1>>24), BYTE_TO_BINARY(encoderData_1>>16), BYTE_TO_BINARY(encoderData_1>>8), BYTE_TO_BINARY(encoderData_1));
+//
+//		  printf("encoderTurns_1: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\r\n",
+//				  BYTE_TO_BINARY(encoderTurns_1>>8), BYTE_TO_BINARY(encoderTurns_1));
+		  cycle--;
 		  HAL_Delay(100);
 	  }
 
 	  while(cycle > 0)
 	  {
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
-		  encoderData_1 = getPositionSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
-		  encoderTurns_1 = getTurnCounterSPI(&hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+		  getTurnCounterSPI(pos, &hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
+
+		  // TODO: Fix bug with the turn counter, try to find form posts because datasheet
+		  // is ass
+		  encoderTurns_1 = pos[1];
+		  // encoderData_1 = pos[0];
+		  // encoderTurns_1 = pos[1];
 		  // encoderData_2 = getPositionSPI(&hspi2, GPIOB, GPIO_PIN_6, 12, &htim1);
 		  // encoderData_3 = getPositionSPI(&hspi3, GPIOA, GPIO_PIN_8, 12, &htim1);
-		  printf("encoder 1 gives %d\r\n", encoderData_1);
-		  printf("encoder 1 turns: %d\r\n", encoderTurns_1);
+
+		  printf("encoder 1 gives %d\r\n", pos[0]);
+		  printf("encoder 1 turns %d\r\n", encoderTurns_1);
+//		  printf("encoderData_1: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\r\n",
+//				  BYTE_TO_BINARY(encoderData_1>>24), BYTE_TO_BINARY(encoderData_1>>16), BYTE_TO_BINARY(encoderData_1>>8), BYTE_TO_BINARY(encoderData_1));
+//
+//		  printf("encoderTurns_1: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\r\n",
+//				  BYTE_TO_BINARY(encoderTurns_1>>8), BYTE_TO_BINARY(encoderTurns_1));
 		  cycle--;
 		  HAL_Delay(100);
 	  }
