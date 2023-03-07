@@ -178,6 +178,8 @@ int main(void)
 		  // PWM cycle set function: 0-100 maps to 0-100% duty cycle
 		  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, cycle);
 
+		  // TODO: Handle the case where the checksum fails and the return value is 0xFFFF. What is it
+		  // supposed to do?
 		  getTurnCounterSPI(pos, &hspi1, GPIOC, GPIO_PIN_7, 12, &htim1);
 
 		  // TODO: Convert an [angle, turn counter] array into a useful measure of absolute angle
